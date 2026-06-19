@@ -10,6 +10,7 @@ function Chat() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [room, setRoom] = useState("General");
 
   const username = localStorage.getItem("username");
 
@@ -42,7 +43,7 @@ function Chat() {
       navigate("/");
       return;
     }
-    
+
 
     const handleConnect = () => {
       console.log("Connected:", socket.id);
@@ -104,12 +105,22 @@ function Chat() {
 
   }, [navigate, username]);
 
+  useEffect(() => {
+
+    socket.emit(
+      "join_room",
+      room
+    );
+
+  }, [room]);
+
   const sendMessage = () => {
     if (!message.trim()) return;
 
     socket.emit("send_message", {
       user: username,
       text: message,
+      room: room,
     });
 
     setMessage("");
@@ -145,6 +156,35 @@ function Chat() {
         </button>
       </div>
 
+      <div className="bg-white p-3 border-b">
+
+        <select
+          value={room}
+          onChange={(e) =>
+            setRoom(e.target.value)
+          }
+          className="border p-2 rounded"
+        >
+          <option value="General">
+            General
+          </option>
+
+          <option value="Coding">
+            Coding
+          </option>
+
+          <option value="Gaming">
+            Gaming
+          </option>
+
+          <option value="Memes">
+            Memes
+          </option>
+
+        </select>
+
+      </div>
+
       {/* Main Area */}
       <div className="flex flex-1 overflow-hidden">
 
@@ -177,43 +217,45 @@ function Chat() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4">
 
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`mb-3 flex ${msg.user === username
-                  ? "justify-end"
-                  : "justify-start"
-                  }`}
-              >
+            {messages
+              .filter((msg) => msg.room === room)
+              .map((msg, index) => (
                 <div
-                  className={`p-3 rounded-lg shadow max-w-md break-words ${msg.user === username
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-black"
+                  key={index}
+                  className={`mb-3 flex ${msg.user === username
+                    ? "justify-end"
+                    : "justify-start"
                     }`}
                 >
-                  <div className="font-semibold">
-                    {msg.user}
-                  </div>
-
-                  <div className="mt-1">
-                    {msg.text}
-                  </div>
-
-                  {msg.createdAt && (
-                    <div
-                      className={`text-xs mt-2 ${msg.user === username
-                        ? "text-blue-100"
-                        : "text-gray-500"
-                        }`}
-                    >
-                      {new Date(
-                        msg.createdAt
-                      ).toLocaleTimeString()}
+                  <div
+                    className={`p-3 rounded-lg shadow max-w-md break-words ${msg.user === username
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-black"
+                      }`}
+                  >
+                    <div className="font-semibold">
+                      {msg.user}
                     </div>
-                  )}
+
+                    <div className="mt-1">
+                      {msg.text}
+                    </div>
+
+                    {msg.createdAt && (
+                      <div
+                        className={`text-xs mt-2 ${msg.user === username
+                          ? "text-blue-100"
+                          : "text-gray-500"
+                          }`}
+                      >
+                        {new Date(
+                          msg.createdAt
+                        ).toLocaleTimeString()}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
 
             <div ref={bottomRef}></div>
 

@@ -57,9 +57,12 @@ io.on("connection", async (socket) => {
     const message = await Message.create({
       user: data.user,
       text: data.text,
+      room: data.room,
     });
 
-    io.emit("receive_message", message);
+    io.to(data.room)
+      .emit("receive_message", message);
+
   });
 
   socket.on("user_connected", (username) => {
@@ -89,6 +92,16 @@ io.on("connection", async (socket) => {
       );
 
     }
+  });
+
+  socket.on("join_room", (room) => {
+
+    socket.join(room);
+
+    console.log(
+      `${socket.id} joined ${room}`
+    );
+
   });
 
   socket.on("disconnect", () => {
