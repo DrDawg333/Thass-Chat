@@ -17,11 +17,13 @@ const signup = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = await User.create({
       username,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+
+      profilePic:
+        `https://api.dicebear.com/9.x/adventurer/svg?seed=${username}`,
     });
 
     res.status(201).json({
@@ -71,7 +73,8 @@ const login = async (req, res) => {
 
     res.json({
       token,
-      username: user.username
+      username: user.username,
+      profilePic: user.profilePic,
     });
 
   } catch (error) {

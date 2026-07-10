@@ -6,8 +6,8 @@ const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 const Message = require("./models/Message");
-const messageRoutes =
-  require("./routes/messageRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
+const messageRoutes = require("./routes/messageRoutes");
 
 require("dotenv").config();
 
@@ -23,6 +23,7 @@ app.use(express.json());
 
 app.use("/api/messages", messageRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/upload", uploadRoutes);
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
@@ -51,6 +52,29 @@ io.on("connection", async (socket) => {
     .sort({ createdAt: 1 });
 
   socket.emit("message_history", messages);
+
+  socket.on("typing", (data) => {
+
+    socket.to(data.room).emit("typing", {
+      username: data.username,
+      room: data.room,
+    });
+
+  });
+
+  socket.on("stop_typing", (room) => {
+
+    socket.to(room).emit("stop_typing");
+
+  });
+
+  socket.on("typing", (username) => {
+    socket.broadcast.emit("typing", username);
+  });
+
+  socket.on("stop_typing", () => {
+    socket.broadcast.emit("stop_typing");
+  });
 
   socket.on("send_message", async (data) => {
 
