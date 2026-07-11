@@ -1,150 +1,172 @@
-const onlineUsers = new Map();
 const express = require("express");
 const mongoose = require("mongoose");
-const authRoutes = require("./routes/authRoutes");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-const Message = require("./models/Message");
+require("dotenv").config();
+
+const authRoutes = require("./routes/authRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const messageRoutes = require("./routes/messageRoutes");
-
-require("dotenv").config();
+const Message = require("./models/Message");
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}));
+
 app.use(express.json());
 
-app.use("/api/messages", messageRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/messages", messageRoutes);
 
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("✅ MongoDB Connected");
-  })
-  .catch((err) => {
-    console.log("❌ MongoDB Error:", err.message);
-  });
+.then(() => console.log("✅ MongoDB Connected"))
+.catch(err => console.log(err));
 
-app.get("/", (req, res) => {
-  res.send("Server Running");
+app.get("/", (req,res)=>{
+    res.send("Server Running");
 });
 
 const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173",
-  },
+const io = new Server(server,{
+    cors:{
+        origin:"http://localhost:5173"
+    }
 });
 
-io.on("connection", async (socket) => {
-  console.log("✅ User Connected:", socket.id);
+/*
+socket.id
+↓
 
-  const messages = await Message.find()
-    .sort({ createdAt: 1 });
+{
+    username,
+    room
+}
+*/
 
-  socket.emit("message_history", messages);
+const onlineUsers = new Map();
 
-  socket.on("typing", (data) => {
+function emitUsers(){
 
-    socket.to(data.room).emit("typing", {
-      username: data.username,
-      room: data.room,
-    });
-
-  });
-
-  socket.on("stop_typing", (room) => {
-
-    socket.to(room).emit("stop_typing");
-
-  });
-
-  socket.on("typing", (username) => {
-    socket.broadcast.emit("typing", username);
-  });
-
-  socket.on("stop_typing", () => {
-    socket.broadcast.emit("stop_typing");
-  });
-
-  socket.on("send_message", async (data) => {
-
-    const message = await Message.create({
-      user: data.user,
-      text: data.text,
-      room: data.room,
-    });
-
-    io.to(data.room)
-      .emit("receive_message", message);
-
-  });
-
-  socket.on("user_connected", (username) => {
-    try {
-
-      console.log("🔥 user_connected:", username);
-
-      socket.username = username;
-
-      onlineUsers.set(socket.id, username);
-
-      const users = [
+    const allUsers=[
         ...new Set(
-          Array.from(onlineUsers.values())
-        ),
-      ];
-
-      console.log("EMITTING:", users);
-
-      io.emit("online_users", users);
-
-    } catch (err) {
-
-      console.error(
-        "ONLINE USER ERROR:",
-        err
-      );
-
-    }
-  });
-
-  socket.on("join_room", (room) => {
-
-    socket.join(room);
-
-    console.log(
-      `${socket.id} joined ${room}`
-    );
-
-  });
-
-  socket.on("disconnect", () => {
-
-    onlineUsers.delete(socket.id);
-
-    const users = [
-      ...new Set(
-        Array.from(onlineUsers.values())
-      ),
+            [...onlineUsers.values()].map(u=>u.username)
+        )
     ];
 
-    io.emit("online_users", users);
+    io.emit("online_users",allUsers);
 
-    console.log("❌ User Disconnected");
-    console.log("ONLINE USERS:", users);
-  });
+    const rooms=["General","Coding","Gaming","Memes"];
+
+    rooms.forEach(room=>{
+
+        const roomUsers=[
+
+            ...new Set(
+
+                [...onlineUsers.values()]
+                .filter(u=>u.room===room)
+                .map(u=>u.username)
+
+            )
+
+        ];
+
+        io.to(room).emit("room_users",roomUsers);
+
+    });
+
+}
+
+io.on("connection",async(socket)=>{
+
+    console.log("🟢",socket.id);
+
+    const history=await Message.find()
+    .sort({createdAt:1});
+
+    socket.emit("message_history",history);
+
+    socket.on("user_connected",(username)=>{
+
+        onlineUsers.set(socket.id,{
+            username,
+            room:null
+        });
+
+        emitUsers();
+
+    });
+
+    socket.on("join_room",(room)=>{
+
+        const user=onlineUsers.get(socket.id);
+
+        if(!user) return;
+
+        if(user.room){
+
+            socket.leave(user.room);
+
+        }
+
+        socket.join(room);
+
+        user.room=room;
+
+        onlineUsers.set(socket.id,user);
+
+        emitUsers();
+
+    });
+
+    socket.on("typing",(data)=>{
+
+        socket.to(data.room).emit("typing",{
+            username:data.username,
+            room:data.room
+        });
+
+    });
+
+    socket.on("stop_typing",(room)=>{
+
+        socket.to(room).emit("stop_typing");
+
+    });
+
+    socket.on("send_message",async(data)=>{
+
+        const message=await Message.create({
+
+            user:data.user,
+            text:data.text,
+            room:data.room
+
+        });
+
+        io.to(data.room)
+        .emit("receive_message",message);
+
+    });
+
+    socket.on("disconnect",()=>{
+
+        onlineUsers.delete(socket.id);
+
+        emitUsers();
+
+        console.log("🔴",socket.id);
+
+    });
+
 });
 
-server.listen(5000, () => {
-  console.log("🚀 Server running on port 5000");
+server.listen(5000,()=>{
+    console.log("🚀 Server running on port 5000");
 });
