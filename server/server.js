@@ -14,7 +14,7 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://thass-chat-rho.vercel.app",
+  "https://thass-chat-mo.vercel.app",
 ];
 
 app.use(cors({
@@ -175,6 +175,8 @@ io.on("connection", async (socket) => {
 
 });
 
-server.listen(5000, () => {
-    console.log("🚀 Server running on port 5000");
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
