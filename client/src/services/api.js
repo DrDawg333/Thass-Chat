@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: import.meta.env.DEV
+    ? "http://localhost:5000/api"
+    : "https://thass-chat.onrender.com/api",
 });
 
 export default API;
