@@ -18,6 +18,9 @@ function Chat() {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [room, setRoom] = useState("General");
 
+  // Mobile sidebar drawer state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const username = localStorage.getItem("username");
 
   const profilePic = localStorage.getItem("profilePic");
@@ -147,33 +150,128 @@ function Chat() {
     }
   }, [room]);
 
+  // Close the mobile drawer whenever the room changes (after picking a room)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [room]);
+
   return (
     <div
-      className="relative h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
+      className="relative h-[100dvh] overflow-hidden bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: `url(${bg})`,
       }}
     >
       <div className="absolute inset-0 bg-black/30"></div>
-      <div className="relative flex h-screen p-8 gap-6">
+      <div className="relative flex flex-col md:flex-row h-[100dvh] p-0 md:p-8 gap-0 md:gap-6">
+        {/* Mobile top bar (hamburger + room name + logout) */}
         <div
           className="
-    w-[285px]
-    rounded-3xl
-    bg-black/25
-    backdrop-blur-[1px]
-    border
+    flex
+    md:hidden
+    items-center
+    justify-between
+    px-4
+    py-3
+    bg-black/30
+    backdrop-blur-md
+    border-b
+    border-red-500/20
+  "
+        >
+          <button
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+            className="
+      w-10
+      h-10
+      flex
+      items-center
+      justify-center
+      rounded-xl
+      bg-white/5
+      border
+      border-white/10
+      text-red-400
+      text-xl
+    "
+          >
+            ☰
+          </button>
+
+          <h1
+            className="text-lg font-semibold text-white"
+            style={{ fontFamily: "Cinzel" }}
+          >
+            {room}
+          </h1>
+
+          <img
+            src={
+              profilePic
+                ? profilePic
+                : `https://api.dicebear.com/9.x/adventurer/svg?seed=${username}`
+            }
+            className="w-8 h-8 rounded-full border border-red-500/30"
+          />
+        </div>
+
+        {/* Mobile drawer overlay */}
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          ></div>
+        )}
+
+        {/* SIDEBAR */}
+        <div
+          className={`
+    fixed
+    md:static
+    inset-y-0
+    left-0
+    z-40
+    w-[80%]
+    max-w-[300px]
+    md:w-[285px]
+    md:max-w-none
+    rounded-none
+    md:rounded-3xl
+    bg-black/40
+    md:bg-black/25
+    backdrop-blur-[6px]
+    md:backdrop-blur-[1px]
+    border-r
+    md:border
     border-red-500/20
     shadow-[0_0_50px_rgba(220,38,38,.15)]
     p-4
     flex
     flex-col
     h-full
-  "
+    md:h-full
+    transform
+    transition-transform
+    duration-300
+    ease-in-out
+    ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+    md:translate-x-0
+  `}
         >
           {/* ---------- TOP ---------- */}
 
           <div className="text-center">
+            <div className="flex md:hidden justify-end mb-1">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close menu"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-gray-300"
+              >
+                ✕
+              </button>
+            </div>
+
             <Logo showTagline={false} showWelcome={false} />
 
             {/* Profile Card */}
@@ -240,7 +338,7 @@ ${room === r
 
           {/* ---------- MIDDLE ---------- */}
 
-          <div className="flex-1 flex flex-col mt-6">
+          <div className="flex-1 flex flex-col mt-6 min-h-0">
             <p className="text-red-400 uppercase text-md tracking-[4px] mb-3 text-center">
               ONLINE
             </p>
@@ -303,12 +401,14 @@ ${room === r
           className="
     flex-1
     min-h-0
-    rounded-3xl
+    rounded-none
+    md:rounded-3xl
     bg-black/20
     backdrop-blur-[1px]
-    border
+    border-0
+    md:border
     border-red-500/20
-    shadow-[0_0_50px_rgba(220,38,38,.15)]
+    md:shadow-[0_0_50px_rgba(220,38,38,.15)]
     overflow-hidden
     flex
     flex-col
@@ -316,15 +416,18 @@ ${room === r
         >
           {/* Chat Area */}
           <div className="flex flex-col flex-1 min-h-0">
+            {/* Desktop header (hidden on mobile, since mobile has its own top bar) */}
             <div
               className="
-py-1
-px-8
+hidden
+md:flex
+py-3
+px-4
+md:px-8
 border-b
 border-red-500/20
 bg-black/20
 backdrop-blur-md
-flex
 items-center
 justify-between
 "
@@ -332,7 +435,8 @@ justify-between
               <div>
                 <h1
                   className="
-        text-2xl
+text-xl
+md:text-2xl
         font-semibold
         text-white
         mb-0
@@ -349,7 +453,7 @@ justify-between
                 </p>
               </div>
 
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-4 md:gap-5">
                 <button className="text-red-400 text-2xl hover:text-white transition">
                   🔍
                 </button>
@@ -362,8 +466,15 @@ justify-between
 
             {/* Messages */}
             <div
-              className="flex-1 min-h-0 overflow-y-auto px-8 py-6"
-              ref={messagesRef}
+              className="
+flex-1
+min-h-0
+overflow-y-auto
+px-3
+md:px-8
+py-3
+md:py-6
+"              ref={messagesRef}
             >
               {messages
                 .filter((msg) => msg.room === room)
@@ -384,20 +495,24 @@ justify-between
                       duration: 0.25,
                     }}
                     className={`mb-4 flex ${msg.user === username
-                        ? "justify-end"
-                        : "justify-start"
+                      ? "justify-end"
+                      : "justify-start"
                       }`}
                   >
                     <div
                       className={`
-    max-w-[70%]
+    max-w-[85%]
+sm:max-w-[80%]
+md:max-w-[70%]
     rounded-2xl
     border
     backdrop-blur-xl
     shadow-lg
     break-words
-    px-5
-    py-4
+    px-3
+py-2
+md:px-5
+md:py-4
     transition-all
     duration-300
     ${msg.user === username
@@ -417,32 +532,35 @@ justify-between
                         }
   `}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2 md:gap-3">
                         <img
                           src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${msg.user}`}
                           alt="avatar"
                           className="
-w-9
-h-9
+w-7
+h-7
+md:w-9
+md:h-9
 rounded-full
 border
 border-red-500/20
+shrink-0
 "
                         />
 
-                        <div>
-                          <div className="font-semibold text-red-400">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-red-400 text-sm md:text-base">
                             {msg.user}
                           </div>
 
-                          <div className="mt-2 text-gray-200 leading-relaxed">
+                          <div className="mt-1 md:mt-2 text-gray-200 leading-relaxed text-sm md:text-base break-words">
                             {msg.text}
                           </div>
                         </div>
                       </div>
 
                       {msg.createdAt && (
-                        <div className="text-[11px] mt-3">
+                        <div className="text-[10px] md:text-[11px] mt-2 md:mt-3">
                           {new Date(msg.createdAt).toLocaleTimeString()}
                         </div>
                       )}
@@ -454,7 +572,7 @@ border-red-500/20
             </div>
 
             {/* Typing Indicator */}
-            <div className="h-8 px-4 flex items-center text-gray-500 italic">
+            <div className="h-7 md:h-8 px-3 md:px-4 flex items-center text-gray-500 italic text-sm">
               {typingUser &&
                 typingUser !== username &&
                 `${typingUser} is typing...`}
@@ -467,11 +585,16 @@ border-red-500/20
     border-red-500/20
     bg-black/25
     backdrop-blur-xl
-    px-6
-    py-5
+    px-3
+    md:px-6
+    py-3
+    md:py-5
     flex
     items-center
-    gap-4
+    gap-2
+    md:gap-4
+    pb-[calc(env(safe-area-inset-bottom)+0.75rem)]
+    md:pb-5
   "
             >
               {" "}
@@ -481,23 +604,31 @@ border-red-500/20
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   className="
-    w-12
-    h-12
+    w-10
+    h-10
+    md:w-12
+    md:h-12
     rounded-full
     bg-white/5
     border
     border-white/10
     hover:bg-red-900/30
     transition
-    text-2xl
+    text-xl
+    md:text-2xl
+    shrink-0
   "
                 >
                   😊
                 </button>
 
                 {showEmojiPicker && (
-                  <div className="absolute bottom-14 left-0 z-50">
-                    <EmojiPicker onEmojiClick={onEmojiClick} />
+                  <div className="fixed md:absolute left-2 right-2 md:left-0 md:right-auto bottom-16 md:bottom-14 z-50 flex justify-center md:block">
+                    <EmojiPicker
+                      onEmojiClick={onEmojiClick}
+                      width="100%"
+                      height={350}
+                    />
                   </div>
                 )}
               </div>
@@ -527,12 +658,15 @@ border-red-500/20
                 placeholder="Type a message..."
                 className="
 flex-1
+min-w-0
 rounded-full
 bg-white/5
 border
 border-white/10
-px-6
-py-4
+px-4
+py-3
+md:px-6
+md:py-4
 text-white
 placeholder:text-gray-500
 outline-none
@@ -546,8 +680,10 @@ focus:bg-white/10
               <button
                 onClick={sendMessage}
                 className="
-w-14
-h-14
+w-11
+h-11
+md:w-14
+md:h-14
 rounded-full
 bg-gradient-to-r
 from-red-900
@@ -561,6 +697,7 @@ duration-300
 hover:scale-105
 hover:shadow-[0_0_20px_rgba(220,38,38,.45)]
 active:scale-95
+shrink-0
 "
               >
                 ➤

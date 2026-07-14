@@ -52,7 +52,7 @@ function SignupForm() {
             );
 
             navigate("/chat");
-            
+
         } catch (err) {
             alert(
                 err.response?.data?.message ||
@@ -64,25 +64,25 @@ function SignupForm() {
     };
 
     return (
-        <div className="w-[430px] p-10">
+        <div className="w-full max-w-[430px] mx-auto p-6 sm:p-8 md:p-10">
 
             <h2
-                className="text-3xl text-white mb-2"
+                className="text-2xl sm:text-3xl text-white mb-2"
                 style={{ fontFamily: "Cinzel" }}
             >
                 Create Account
             </h2>
 
-            <p className="text-gray-400 mb-8">
+            <p className="text-gray-400 mb-6 sm:mb-8">
                 Join Thass Chat.
             </p>
 
             {/* Username */}
 
             <div className="mb-4">
-                <div className="flex items-center rounded-xl border border-white/10 bg-black/20 px-4 py-4">
+                <div className="flex items-center rounded-xl border border-white/10 bg-black/20 px-4 py-3.5 sm:py-4">
 
-                    <HiUser className="text-red-400 text-xl" />
+                    <HiUser className="text-red-400 text-xl shrink-0" />
 
                     <input
                         type="text"
@@ -94,7 +94,7 @@ function SignupForm() {
                             })
                         }
                         placeholder="Username"
-                        className="ml-3 w-full bg-transparent outline-none text-white placeholder:text-gray-500"
+                        className="ml-3 w-full min-w-0 bg-transparent outline-none text-white placeholder:text-gray-500"
                     />
 
                 </div>
@@ -103,9 +103,9 @@ function SignupForm() {
             {/* Email */}
 
             <div className="mb-4">
-                <div className="flex items-center rounded-xl border border-white/10 bg-black/20 px-4 py-4">
+                <div className="flex items-center rounded-xl border border-white/10 bg-black/20 px-4 py-3.5 sm:py-4">
 
-                    <HiMail className="text-red-400 text-xl" />
+                    <HiMail className="text-red-400 text-xl shrink-0" />
 
                     <input
                         type="email"
@@ -117,7 +117,7 @@ function SignupForm() {
                             })
                         }
                         placeholder="Email"
-                        className="ml-3 w-full bg-transparent outline-none text-white placeholder:text-gray-500"
+                        className="ml-3 w-full min-w-0 bg-transparent outline-none text-white placeholder:text-gray-500"
                     />
 
                 </div>
@@ -126,9 +126,9 @@ function SignupForm() {
             {/* Password */}
 
             <div className="mb-6">
-                <div className="flex items-center rounded-xl border border-white/10 bg-black/20 px-4 py-4">
+                <div className="flex items-center rounded-xl border border-white/10 bg-black/20 px-4 py-3.5 sm:py-4">
 
-                    <HiLockClosed className="text-red-400 text-xl" />
+                    <HiLockClosed className="text-red-400 text-xl shrink-0" />
 
                     <input
                         type={showPassword ? "text" : "password"}
@@ -140,12 +140,13 @@ function SignupForm() {
                             })
                         }
                         placeholder="Password"
-                        className="ml-3 w-full bg-transparent outline-none text-white placeholder:text-gray-500"
+                        className="ml-3 w-full min-w-0 bg-transparent outline-none text-white placeholder:text-gray-500"
                     />
 
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        className="shrink-0"
                     >
                         {showPassword ? (
                             <HiEyeOff className="text-gray-400" />
@@ -158,26 +159,28 @@ function SignupForm() {
             </div>
 
             <button
+                onClick={handleSignup}
+                disabled={loading}
+                type="button"
                 className="
           w-full
-          py-4
+          py-3.5
+          sm:py-4
           rounded-xl
           bg-gradient-to-r
           from-red-900
           to-red-700
           text-white
           hover:scale-[1.02]
+          active:scale-[0.99]
           transition
+          disabled:opacity-60
+          disabled:hover:scale-100
         "
             >
-                <button
-                    onClick={handleSignup}
-                    disabled={loading}
-                >
-                    {loading
-                        ? "Creating..."
-                        : "CREATE ACCOUNT"}
-                </button>
+                {loading
+                    ? "Creating..."
+                    : "CREATE ACCOUNT"}
             </button>
 
         </div>

@@ -13,8 +13,11 @@ const Message = require("./models/Message");
 const app = express();
 
 app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
+    origin: [
+        "http://localhost:5173",
+        "https://your-vercel-url.vercel.app",
+    ],
+    credentials: true,
 }));
 
 app.use(express.json());
@@ -24,19 +27,23 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/messages", messageRoutes);
 
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("✅ MongoDB Connected"))
-.catch(err => console.log(err));
+    .then(() => console.log("✅ MongoDB Connected"))
+    .catch(err => console.log(err));
 
-app.get("/", (req,res)=>{
+app.get("/", (req, res) => {
     res.send("Server Running");
 });
 
 const server = http.createServer(app);
 
-const io = new Server(server,{
-    cors:{
-        origin:"http://localhost:5173"
-    }
+const io = new Server(server, {
+    cors: {
+        origin: [
+            "http://localhost:5173",
+            "https://your-vercel-url.vercel.app",
+        ],
+        credentials: true,
+    },
 });
 
 /*
@@ -51,65 +58,65 @@ socket.id
 
 const onlineUsers = new Map();
 
-function emitUsers(){
+function emitUsers() {
 
-    const allUsers=[
+    const allUsers = [
         ...new Set(
-            [...onlineUsers.values()].map(u=>u.username)
+            [...onlineUsers.values()].map(u => u.username)
         )
     ];
 
-    io.emit("online_users",allUsers);
+    io.emit("online_users", allUsers);
 
-    const rooms=["General","Coding","Gaming","Memes"];
+    const rooms = ["General", "Coding", "Gaming", "Memes"];
 
-    rooms.forEach(room=>{
+    rooms.forEach(room => {
 
-        const roomUsers=[
+        const roomUsers = [
 
             ...new Set(
 
                 [...onlineUsers.values()]
-                .filter(u=>u.room===room)
-                .map(u=>u.username)
+                    .filter(u => u.room === room)
+                    .map(u => u.username)
 
             )
 
         ];
 
-        io.to(room).emit("room_users",roomUsers);
+        io.to(room).emit("room_users", roomUsers);
 
     });
 
 }
 
-io.on("connection",async(socket)=>{
+io.on("connection", async (socket) => {
 
-    console.log("🟢",socket.id);
+    console.log("🟢", socket.id);
 
-    const history=await Message.find()
-    .sort({createdAt:1});
+    const history = await Message.find()
+        .sort({ createdAt: 1 });
 
-    socket.emit("message_history",history);
+    socket.emit("message_history", history);
 
-    socket.on("user_connected",(username)=>{
+    socket.on("user_connected", (username) => {
 
-        onlineUsers.set(socket.id,{
+        onlineUsers.set(socket.id, {
             username,
-            room:null
+            room: null
         });
 
         emitUsers();
 
     });
 
-    socket.on("join_room",(room)=>{
+    socket.on("join_room", (room) => {
 
-        const user=onlineUsers.get(socket.id);
+        const user = onlineUsers.get(socket.id);
 
-        if(!user) return;
+        if (!user) return;
 
-        if(user.room){
+        if (user.room) {
 
             socket.leave(user.room);
 
@@ -117,56 +124,56 @@ io.on("connection",async(socket)=>{
 
         socket.join(room);
 
-        user.room=room;
+        user.room = room;
 
-        onlineUsers.set(socket.id,user);
+        onlineUsers.set(socket.id, user);
 
         emitUsers();
 
     });
 
-    socket.on("typing",(data)=>{
+    socket.on("typing", (data) => {
 
-        socket.to(data.room).emit("typing",{
-            username:data.username,
-            room:data.room
+        socket.to(data.room).emit("typing", {
+            username: data.username,
+            room: data.room
         });
 
     });
 
-    socket.on("stop_typing",(room)=>{
+    socket.on("stop_typing", (room) => {
 
         socket.to(room).emit("stop_typing");
 
     });
 
-    socket.on("send_message",async(data)=>{
+    socket.on("send_message", async (data) => {
 
-        const message=await Message.create({
+        const message = await Message.create({
 
-            user:data.user,
-            text:data.text,
-            room:data.room
+            user: data.user,
+            text: data.text,
+            room: data.room
 
         });
 
         io.to(data.room)
-        .emit("receive_message",message);
+            .emit("receive_message", message);
 
     });
 
-    socket.on("disconnect",()=>{
+    socket.on("disconnect", () => {
 
         onlineUsers.delete(socket.id);
 
         emitUsers();
 
-        console.log("🔴",socket.id);
+        console.log("🔴", socket.id);
 
     });
 
 });
 
-server.listen(5000,()=>{
+server.listen(5000, () => {
     console.log("🚀 Server running on port 5000");
 });
