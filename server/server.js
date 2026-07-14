@@ -14,7 +14,7 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://thass-chat-rho.vercel.app",
+  "https://thass-chat-mo.vercel.app",
 ];
 
 app.use(cors({
